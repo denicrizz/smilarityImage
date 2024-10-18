@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Similarity Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .upload-section, .results-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .uploaded-image {
+            max-width: 300px;
+            margin-top: 20px;
+        }
+        .similar-image {
+            max-width: 200px;
+            margin: 10px;
+        }
+        .similar-images {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Similarity Search</h1>
+        
+        <div class="upload-section">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="file" name="file" accept="image/*" required>
+                <button type="submit">Upload Image</button>
+            </form>
+        </div>
+
+        {% if uploaded_image %}
+        <div class="results-section">
+            <h2>Uploaded Image</h2>
+            <img src="{{ url_for('static', filename='uploads/' + uploaded_image) }}" class="uploaded-image" alt="Uploaded Image">
+            
+            <h2>Similar Images</h2>
+            <div class="similar-images">
+                {% for image, similarity in similar_images %}
+                <div>
+                    <img src="{{ url_for('static', filename=image.split('static/')[-1]) }}" class="similar-image" alt="Similar Image">
+                    <p>Similarity: {{ similarity }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
