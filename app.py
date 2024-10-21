@@ -1,23 +1,17 @@
 import os
 import numpy as np
-from flask import Flask, render_template, request, redirect, url_for
-from werkzeug.utils import secure_filename
+import streamlit as st
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from sklearn.metrics.pairwise import cosine_similarity
-import cv2
-import matplotlib.pyplot as plt
-
-# Inisialisasi Flask app
-app = Flask(__name__)
-
-# Folder untuk menyimpan gambar yang diupload
-UPLOAD_FOLDER = 'static/uploads/'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Load pretrained VGG16 model
-model = VGG16(weights='imagenet', include_top=False)
+@st.cache_resource
+def load_model():
+    return VGG16(weights='imagenet', include_top=False)
+
+model = load_model()
 
 # Fungsi untuk mengekstraksi fitur dari gambar
 def extract_features(img_path, model):
@@ -29,6 +23,7 @@ def extract_features(img_path, model):
     return features.flatten()
 
 # Fungsi untuk memuat gambar dan mengekstraksi fitur dari semua gambar
+@st.cache_data
 def load_images_and_extract_features(image_folder):
     image_features = []
     image_paths = []
@@ -48,42 +43,43 @@ def find_similar_images(input_features, features_list, image_paths):
     sorted_indices = np.argsort(similarities)[::-1]
     return [(image_paths[i], similarities[i]) for i in sorted_indices]
 
-# Route untuk halaman utama
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        # Jika pengguna mengunggah gambar
-        if 'file' not in request.files:
-            return redirect(request.url)
-        
-        file = request.files['file']
-        
-        if file.filename == '':
-            return redirect(request.url)
-        
-        if file:
-            # Simpan gambar yang diunggah
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            
-            # Ekstraksi fitur dari gambar input
-            input_features = extract_features(filepath, model)
-            
-            # Memuat dataset gambar dan fitur mereka
-            dataset_folder = 'static/images/'  # Folder dataset gambar
-            image_paths, image_features = load_images_and_extract_features(dataset_folder)
-            
-            # Temukan gambar serupa
-            similar_images = find_similar_images(input_features, image_features, image_paths)
-            
-            # Hanya ambil 5 gambar teratas yang mirip
-            similar_images = similar_images[:5]
-            
-            # Kirim data gambar serupa ke frontend
-            return render_template('index.html', uploaded_image=filename, similar_images=similar_images)
-    
-    return render_template('index.html')
+# Streamlit app
+def main():
+    st.title("Similarity Image")
+
+    # Pastikan folder uploads ada
+    os.makedirs("uploads", exist_ok=True)
+
+    uploaded_file = st.file_uploader("Pilih sebuah gambar...", type=["png", "jpg", "jpeg"])
+
+    if uploaded_file is not None:
+        # Simpan gambar yang diunggah
+        with open(os.path.join("uploads", uploaded_file.name), "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        filepath = os.path.join("uploads", uploaded_file.name)
+
+        # Tampilkan gambar yang diunggah
+        st.image(uploaded_file, caption="Gambar yang Diunggah", use_column_width=True)
+
+        # Ekstraksi fitur dari gambar input
+        input_features = extract_features(filepath, model)
+
+        # Memuat dataset gambar dan fitur mereka
+        dataset_folder = 'static/images/'  # Folder dataset gambar
+        image_paths, image_features = load_images_and_extract_features(dataset_folder)
+
+        # Temukan gambar serupa
+        similar_images = find_similar_images(input_features, image_features, image_paths)
+
+        # Hanya ambil 5 gambar teratas yang mirip
+        similar_images = similar_images[:5]
+
+        # Tampilkan gambar serupa
+        st.subheader("5 gambar yang mungkin sama:")
+        cols = st.columns(5)
+        for idx, (img_path, similarity) in enumerate(similar_images):
+            with cols[idx]:
+                st.image(img_path, caption=f"Kesamaan: {similarity:.2f}", use_column_width=True)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    main()
