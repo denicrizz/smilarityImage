@@ -75,8 +75,8 @@ def main():
         # Find similar images
         similar_images = find_similar_images(input_features, image_features, image_paths)
 
-        # Filter out images with similarity less than 10%
-        similar_images = [(img_path, similarity) for img_path, similarity in similar_images if similarity >= 0.10]
+        # Filter out images with similarity less than 20%
+        similar_images = [(img_path, similarity) for img_path, similarity in similar_images if similarity >= 0.20]
 
         # Check if there are similar images
         if not similar_images:
