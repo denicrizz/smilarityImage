@@ -1,5 +1,5 @@
 import os
-import numpy as np
+import numpy as npd
 import streamlit as st
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.preprocessing import image
