@@ -5,11 +5,16 @@ from tensorflow.keras.applications import VGG16
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from sklearn.metrics.pairwise import cosine_similarity
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras import layers, models
 
 # Load pretrained VGG16 model
 @st.cache_resource
 def load_model():
-    return VGG16(weights='imagenet', include_top=False)
+    base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+    for layer in base_model.layers:
+        layer.trainable = False  # Freeze the base model layers
+    return base_model
 
 model = load_model()
 
@@ -44,7 +49,7 @@ def find_similar_images(input_features, features_list, image_paths):
 
 # Streamlit app
 def main():
-    st.title("Klasifikasi Kemiripan gambar bunga mawar merah")
+    st.title("Klasifikasi Kemiripan Gambar Bunga Mawar Merah")
 
     # Ensure uploads folder exists
     os.makedirs("uploads", exist_ok=True)
